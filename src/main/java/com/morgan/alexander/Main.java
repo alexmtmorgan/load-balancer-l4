@@ -5,7 +5,8 @@ import com.morgan.alexander.loadbalancer.ClientLoadBalancer;
 import com.morgan.alexander.loadbalancer.ClientLoadBalancerImpl;
 import com.morgan.alexander.loadbalancer.L4LoadBalancer;
 import com.morgan.alexander.loadbalancer.L4LoadBalancerImpl;
-import com.morgan.alexander.server.registry.ServerRegistryImpl;
+import com.morgan.alexander.server.registry.RoundRobinServerRegistry;
+import com.morgan.alexander.server.registry.ServerRegistry;
 import com.morgan.alexander.socket.ServerSocketFactoryImpl;
 import com.morgan.alexander.socket.SocketFactoryImpl;
 
@@ -20,10 +21,12 @@ public class Main {
     public static void main(final String... args) throws IOException {
         final ExecutorService dataTransferPool = Executors.newCachedThreadPool();
 
+        final ServerRegistry serverRegistry = new RoundRobinServerRegistry();
+        final SocketFactoryImpl socketFactory = new SocketFactoryImpl();
         final ClientLoadBalancer clientLoadBalancer = new ClientLoadBalancerImpl(
                 dataTransferPool,
-                new ServerRegistryImpl(),
-                new SocketFactoryImpl(),
+                serverRegistry,
+                socketFactory,
                 new SocketDataTransferServiceImpl()
         );
 
@@ -33,6 +36,7 @@ public class Main {
                 new ServerSocketFactoryImpl(),
                 clientLoadBalancer
         );
+
         l4LoadBalancer.start();
     }
 }

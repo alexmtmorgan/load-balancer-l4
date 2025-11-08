@@ -9,7 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 
-public class L4LoadBalancerImpl implements L4LoadBalancer {
+public class L4LoadBalancerImpl implements L4LoadBalancer, AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(L4LoadBalancerImpl.class);
     public static final int CLIENT_PORT = 9_876;
@@ -51,7 +51,15 @@ public class L4LoadBalancerImpl implements L4LoadBalancer {
             LOGGER.info("Accepting connections on port: {}", CLIENT_PORT);
             while (this.running) {
                 final Socket clientSocket = clientServerSocket.accept();
-                clientPool.submit(() -> clientLoadBalancer.loadBalance(clientSocket));
+                clientPool.submit(() -> {
+                    try {
+                        clientLoadBalancer.loadBalance(clientSocket);
+                    } catch (final Exception ex) {
+                        LOGGER.error("Exception occurred during client socket session for {}:{}",
+                                clientSocket.getInetAddress(), clientSocket.getPort());
+                        throw ex;
+                    }
+                });
             }
         }
     }
@@ -64,4 +72,9 @@ public class L4LoadBalancerImpl implements L4LoadBalancer {
         this.running = false;
     }
 
+    @Override
+    public void close() throws Exception {
+        stop();
+        this.clientPool.shutdown();
+    }
 }

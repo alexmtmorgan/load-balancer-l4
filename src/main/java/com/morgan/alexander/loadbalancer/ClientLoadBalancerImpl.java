@@ -3,6 +3,7 @@ package com.morgan.alexander.loadbalancer;
 import com.morgan.alexander.datatransfer.SocketDataTransferService;
 import com.morgan.alexander.server.model.Server;
 import com.morgan.alexander.server.registry.ServerRegistry;
+import com.morgan.alexander.server.registry.ServerRegistryServerProvider;
 import com.morgan.alexander.socket.SocketFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,21 +15,21 @@ import java.util.concurrent.ExecutorService;
 /**
  * Perform client load balancing.
  */
-public class ClientLoadBalancerImpl implements ClientLoadBalancer {
+public class ClientLoadBalancerImpl implements ClientLoadBalancer, AutoCloseable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientLoadBalancerImpl.class);
 
     private final ExecutorService dataTransferPool;
-    private final ServerRegistry serverRegistry;
+    private final ServerRegistryServerProvider serverRegistryServerProvider;
     private final SocketFactory socketFactory;
     private final SocketDataTransferService socketDataTransferService;
 
     public ClientLoadBalancerImpl(final ExecutorService dataTransferPool,
-                                  final ServerRegistry serverRegistry,
+                                  final ServerRegistryServerProvider serverRegistryServerProvider,
                                   final SocketFactory socketFactory,
                                   final SocketDataTransferService socketDataTransferService) {
         this.dataTransferPool = dataTransferPool;
-        this.serverRegistry = serverRegistry;
+        this.serverRegistryServerProvider = serverRegistryServerProvider;
         this.socketFactory = socketFactory;
         this.socketDataTransferService = socketDataTransferService;
     }
@@ -37,7 +38,7 @@ public class ClientLoadBalancerImpl implements ClientLoadBalancer {
     public void loadBalance(final Socket clientSocket) {
         LOGGER.debug("Accepted connection from client: {}:{}",
                 clientSocket.getInetAddress(), clientSocket.getPort());
-        final Server server = serverRegistry.next();
+        final Server server = serverRegistryServerProvider.next();
 
         // do not use try-with-resources or socket is closed once thread is submitted
         try {
@@ -59,5 +60,10 @@ public class ClientLoadBalancerImpl implements ClientLoadBalancer {
                         in.getInetAddress(), in.getPort(), out.getInetAddress(), out.getPort(), e);
             }
         };
+    }
+
+    @Override
+    public void close() {
+        dataTransferPool.shutdown();
     }
 }

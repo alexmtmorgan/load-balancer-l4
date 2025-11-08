@@ -12,20 +12,13 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith({MockitoExtension.class})
-class ServerRegistryImplTest {
-
-    private static final Map<Integer, String> SERVER_HOSTS = Map.of(
-            0, "us-east-1",
-            1, "us-east-2",
-            2, "us-west-1",
-            3, "us-west-2"
-    );
+class RoundRobinServerRegistryTest {
 
     private ServerRegistry testee;
 
     @BeforeEach
     void setUp() {
-        this.testee = new ServerRegistryImpl();
+        this.testee = new RoundRobinServerRegistry();
     }
 
     @Nested
@@ -36,7 +29,7 @@ class ServerRegistryImplTest {
             final Server actual = testee.next();
 
             assertThat(actual)
-                    .isEqualTo(new Server("https://server.us-east-1.com", 443))
+                    .isEqualTo(new Server("127.0.0.1", 8081))
                     .hasNoNullFieldsOrProperties();
         }
 
@@ -46,7 +39,7 @@ class ServerRegistryImplTest {
             final Server actual = testee.next();
 
             assertThat(actual)
-                    .isEqualTo(new Server("https://server.us-east-2.com", 443))
+                    .isEqualTo(new Server("127.0.0.1", 8082))
                     .hasNoNullFieldsOrProperties();
         }
 
@@ -57,7 +50,7 @@ class ServerRegistryImplTest {
             final Server actual = testee.next();
 
             assertThat(actual)
-                    .isEqualTo(new Server("https://server.us-west-1.com", 443))
+                    .isEqualTo(new Server("127.0.0.1", 8083))
                     .hasNoNullFieldsOrProperties();
         }
 
@@ -69,7 +62,7 @@ class ServerRegistryImplTest {
             final Server actual = testee.next();
 
             assertThat(actual)
-                    .isEqualTo(new Server("https://server.us-west-2.com", 443))
+                    .isEqualTo(new Server("127.0.0.1", 8084))
                     .hasNoNullFieldsOrProperties();
         }
 
@@ -82,7 +75,7 @@ class ServerRegistryImplTest {
             final Server actual = testee.next();
 
             assertThat(actual)
-                    .isEqualTo(new Server("https://server.us-east-1.com", 443))
+                    .isEqualTo(new Server("127.0.0.1", 8081))
                     .hasNoNullFieldsOrProperties();
         }
 
@@ -92,10 +85,10 @@ class ServerRegistryImplTest {
             for (int i = 0; i < 100; i++) {
                 actual = testee.next();
 
-                final String serverLocation = SERVER_HOSTS.get(i % 4);
+                int index = i % 4;
 
                 assertThat(actual)
-                        .isEqualTo(new Server("https://server.%s.com".formatted(serverLocation), 443))
+                        .isEqualTo(new Server("127.0.0.1", 8081 + index))
                         .hasNoNullFieldsOrProperties();
             }
         }
