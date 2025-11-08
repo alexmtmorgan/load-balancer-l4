@@ -76,7 +76,7 @@ class L4LoadBalancerImplTest {
 
             doNothing()
                     .when(dataTransferPool)
-                    .execute(any());
+                    .submit(any(Runnable.class));
 
             doNothing()
                     .when(socketDataTransferService)
@@ -89,7 +89,7 @@ class L4LoadBalancerImplTest {
 
 
             final InOrder inOrder = inOrder(dataTransferPool, socketDataTransferService);
-            inOrder.verify(dataTransferPool, times(2)).execute(runnableArgumentCaptor.capture());
+            inOrder.verify(dataTransferPool, times(2)).submit(runnableArgumentCaptor.capture());
             runnableArgumentCaptor.getAllValues().forEach(Runnable::run);
 
             inOrder.verify(socketDataTransferService).transferData(clientSocket, loadBalancedServerSocket);

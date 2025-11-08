@@ -60,13 +60,15 @@ public class L4LoadBalancerImpl implements L4LoadBalancer {
                     clientSocket.getInetAddress(), clientSocket.getPort());
             final Server server = serverRegistry.next();
 
-            // do not use try-with-resources or socket is closed once thread is submitted
-            try {
-                final Socket serverSocket = socketFactory.create(server.host(), server.port());
-                dataTransferPool.execute(transferData(clientSocket, serverSocket));
-                dataTransferPool.execute(transferData(serverSocket, clientSocket));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                    // do not use try-with-resources or socket is closed once thread is submitted
+                    try {
+                        final Socket serverSocket = socketFactory.create(server.host(), server.port());
+                        dataTransferPool.submit(transferData(clientSocket, serverSocket));
+                        dataTransferPool.submit(transferData(serverSocket, clientSocket));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             }
         }
     }
