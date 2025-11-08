@@ -5,14 +5,14 @@ import com.morgan.alexander.loadbalancer.ClientLoadBalancer;
 import com.morgan.alexander.loadbalancer.ClientLoadBalancerImpl;
 import com.morgan.alexander.loadbalancer.L4LoadBalancer;
 import com.morgan.alexander.loadbalancer.L4LoadBalancerImpl;
-import com.morgan.alexander.server.registry.RoundRobinServerRegistry;
-import com.morgan.alexander.server.registry.ServerRegistry;
+import com.morgan.alexander.server.registry.*;
 import com.morgan.alexander.socket.ServerSocketFactoryImpl;
 import com.morgan.alexander.socket.SocketFactoryImpl;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Main class, entry-point for load balancer.
@@ -29,6 +29,15 @@ public class Main {
                 socketFactory,
                 new SocketDataTransferServiceImpl()
         );
+
+        final ScheduledExecutorService scheduledPool = Executors.newSingleThreadScheduledExecutor();
+        final ServerRegistryPrunerService serverRegistryPrunerService = new ServerRegistryPrunerServiceImpl(
+                scheduledPool,
+                serverRegistry,
+                new ServerHealthCheckerImpl(socketFactory)
+        );
+
+        serverRegistryPrunerService.start();
 
         final ExecutorService clientPool = Executors.newCachedThreadPool();
         final L4LoadBalancer l4LoadBalancer = new L4LoadBalancerImpl(

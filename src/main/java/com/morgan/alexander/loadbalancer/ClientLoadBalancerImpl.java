@@ -2,7 +2,6 @@ package com.morgan.alexander.loadbalancer;
 
 import com.morgan.alexander.datatransfer.SocketDataTransferService;
 import com.morgan.alexander.server.model.Server;
-import com.morgan.alexander.server.registry.ServerRegistry;
 import com.morgan.alexander.server.registry.ServerRegistryServerProvider;
 import com.morgan.alexander.socket.SocketFactory;
 import org.slf4j.Logger;
