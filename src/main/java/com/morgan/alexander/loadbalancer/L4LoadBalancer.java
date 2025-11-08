@@ -13,4 +13,9 @@ public interface L4LoadBalancer {
      * @throws IOException if IO error occurs that is unrecoverable.
      */
     void start() throws IOException;
+
+    /**
+     * Stop the load balancer.
+     */
+    void stop();
 }

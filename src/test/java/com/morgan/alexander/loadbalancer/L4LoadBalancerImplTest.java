@@ -1,10 +1,6 @@
 package com.morgan.alexander.loadbalancer;
 
-import com.morgan.alexander.datatransfer.SocketDataTransferService;
-import com.morgan.alexander.server.model.Server;
-import com.morgan.alexander.server.registry.ServerRegistry;
 import com.morgan.alexander.socket.ServerSocketFactory;
-import com.morgan.alexander.socket.SocketFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,26 +25,20 @@ class L4LoadBalancerImplTest {
     private ArgumentCaptor<Runnable> runnableArgumentCaptor;
 
     @Mock
-    private ExecutorService dataTransferPool;
+    private ExecutorService clientPool;
     @Mock
     private ServerSocketFactory serverSocketFactory;
     @Mock
-    private ServerRegistry serverRegistry;
-    @Mock
-    private SocketFactory socketFactory;
-    @Mock
-    private SocketDataTransferService socketDataTransferService;
+    private ClientLoadBalancer clientLoadBalancer;
 
     private L4LoadBalancer testee;
 
     @BeforeEach
     void setUp() {
         this.testee = new L4LoadBalancerImpl(
-                dataTransferPool,
+                clientPool,
                 serverSocketFactory,
-                serverRegistry,
-                socketFactory,
-                socketDataTransferService
+                clientLoadBalancer
         );
     }
 
@@ -62,38 +52,27 @@ class L4LoadBalancerImplTest {
                     .thenReturn(mockClientServerSocket);
             final Socket clientSocket = mock(Socket.class);
             when(mockClientServerSocket.accept())
-                    .thenReturn(clientSocket);
+                    .thenAnswer((invocation -> {
+                        // ensure only loops once
+                        testee.stop();
+                        return clientSocket;
+                    }));
 
-            final String serverHost = "127.0.0.1";
-            final int serverPort = 5432;
-            final Server server = new Server(serverHost, serverPort);
-            when(serverRegistry.next())
-                    .thenReturn(server);
-
-            final Socket loadBalancedServerSocket = mock(Socket.class);
-            when(socketFactory.create(serverHost, serverPort))
-                    .thenReturn(loadBalancedServerSocket);
+            when(clientPool.submit(any(Runnable.class)))
+                    .thenReturn(null);
 
             doNothing()
-                    .when(dataTransferPool)
-                    .submit(any(Runnable.class));
-
-            doNothing()
-                    .when(socketDataTransferService)
-                    .transferData(clientSocket, loadBalancedServerSocket);
-            doNothing()
-                    .when(socketDataTransferService)
-                    .transferData(loadBalancedServerSocket, clientSocket);
+                    .when(clientLoadBalancer).loadBalance(clientSocket);
 
             testee.start();
 
+            final InOrder inOrder = inOrder(clientPool, clientLoadBalancer);
+            inOrder.verify(clientPool).submit(runnableArgumentCaptor.capture());
+            runnableArgumentCaptor.getValue().run();
 
-            final InOrder inOrder = inOrder(dataTransferPool, socketDataTransferService);
-            inOrder.verify(dataTransferPool, times(2)).submit(runnableArgumentCaptor.capture());
-            runnableArgumentCaptor.getAllValues().forEach(Runnable::run);
+            inOrder.verify(clientLoadBalancer).loadBalance(clientSocket);
 
-            inOrder.verify(socketDataTransferService).transferData(clientSocket, loadBalancedServerSocket);
-            inOrder.verify(socketDataTransferService).transferData(loadBalancedServerSocket, clientSocket);
+            verifyNoMoreInteractions(serverSocketFactory, clientPool, clientLoadBalancer);
         }
     }
 
