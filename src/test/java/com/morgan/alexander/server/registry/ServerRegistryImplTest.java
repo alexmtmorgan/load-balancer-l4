@@ -89,7 +89,7 @@ class ServerRegistryImplTest {
         @Test
         void loopsBackToNth_100Times() {
             Server actual;
-            for(int i = 0; i < 100; i++) {
+            for (int i = 0; i < 100; i++) {
                 actual = testee.next();
 
                 final String serverLocation = SERVER_HOSTS.get(i % 4);

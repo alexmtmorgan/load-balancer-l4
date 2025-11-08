@@ -13,7 +13,7 @@ public class ServerRegistryImpl implements ServerRegistry {
     public ServerRegistryImpl() {
         this.servers = new ArrayList<>(
                 List.of(
-                        new Server("https://server.us-east-1.com", 443),
+                        new Server("127.0.0.1", 8081),
                         new Server("https://server.us-east-2.com", 443),
                         new Server("https://server.us-west-1.com", 443),
                         new Server("https://server.us-west-2.com", 443)

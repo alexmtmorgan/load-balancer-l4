@@ -9,6 +9,7 @@ public interface L4LoadBalancer {
 
     /**
      * Starts up the load balancer.
+     *
      * @throws IOException if IO error occurs that is unrecoverable.
      */
     void start() throws IOException;

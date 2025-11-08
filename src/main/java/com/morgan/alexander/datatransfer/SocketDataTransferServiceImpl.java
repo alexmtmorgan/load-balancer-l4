@@ -19,7 +19,9 @@ public class SocketDataTransferServiceImpl implements SocketDataTransferService 
                              final Socket outputSocket) throws IOException {
         try (final InputStream input = inputSocket.getInputStream();
              final OutputStream output = outputSocket.getOutputStream()) {
-            LOGGER.info("Transferring data from {} to {}", inputSocket.getInetAddress(), outputSocket.getInetAddress());
+            LOGGER.info("Transferring data from {}:{} to {}:{}",
+                    inputSocket.getInetAddress(), inputSocket.getPort(),
+                    outputSocket.getInetAddress(), outputSocket.getPort());
             input.transferTo(output);
         }
     }

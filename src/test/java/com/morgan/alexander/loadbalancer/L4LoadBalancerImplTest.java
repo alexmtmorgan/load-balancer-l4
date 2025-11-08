@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,11 +18,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
 
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class})
 class L4LoadBalancerImplTest {
+
+    @Captor
+    private ArgumentCaptor<Runnable> runnableArgumentCaptor;
+
+    @Mock
+    private ExecutorService dataTransferPool;
     @Mock
     private ServerSocketFactory serverSocketFactory;
     @Mock
@@ -35,6 +44,7 @@ class L4LoadBalancerImplTest {
     @BeforeEach
     void setUp() {
         this.testee = new L4LoadBalancerImpl(
+                dataTransferPool,
                 serverSocketFactory,
                 serverRegistry,
                 socketFactory,
@@ -65,17 +75,23 @@ class L4LoadBalancerImplTest {
                     .thenReturn(loadBalancedServerSocket);
 
             doNothing()
+                    .when(dataTransferPool)
+                    .execute(any());
+
+            doNothing()
                     .when(socketDataTransferService)
                     .transferData(clientSocket, loadBalancedServerSocket);
             doNothing()
                     .when(socketDataTransferService)
                     .transferData(loadBalancedServerSocket, clientSocket);
 
-
-
             testee.start();
 
-            final InOrder inOrder = inOrder(socketDataTransferService);
+
+            final InOrder inOrder = inOrder(dataTransferPool, socketDataTransferService);
+            inOrder.verify(dataTransferPool, times(2)).execute(runnableArgumentCaptor.capture());
+            runnableArgumentCaptor.getAllValues().forEach(Runnable::run);
+
             inOrder.verify(socketDataTransferService).transferData(clientSocket, loadBalancedServerSocket);
             inOrder.verify(socketDataTransferService).transferData(loadBalancedServerSocket, clientSocket);
         }
