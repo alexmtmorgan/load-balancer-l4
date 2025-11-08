@@ -30,14 +30,6 @@ public class Main {
                 new SocketDataTransferServiceImpl()
         );
 
-        final ScheduledExecutorService scheduledPool = Executors.newSingleThreadScheduledExecutor();
-        final ServerRegistryPrunerService serverRegistryPrunerService = new ServerRegistryPrunerServiceImpl(
-                scheduledPool,
-                serverRegistry,
-                new ServerHealthCheckerImpl(socketFactory)
-        );
-
-        serverRegistryPrunerService.start();
 
         final ExecutorService clientPool = Executors.newCachedThreadPool();
         final L4LoadBalancer l4LoadBalancer = new L4LoadBalancerImpl(
@@ -47,5 +39,14 @@ public class Main {
         );
 
         l4LoadBalancer.start();
+
+        final ScheduledExecutorService scheduledPool = Executors.newSingleThreadScheduledExecutor();
+        final ServerRegistryPrunerService serverRegistryPrunerService = new ServerRegistryPrunerServiceImpl(
+                scheduledPool,
+                serverRegistry,
+                new ServerHealthCheckerImpl(socketFactory)
+        );
+
+        serverRegistryPrunerService.start();
     }
 }
