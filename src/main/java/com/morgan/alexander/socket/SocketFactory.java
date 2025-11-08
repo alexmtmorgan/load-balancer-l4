@@ -6,7 +6,6 @@ import java.net.Socket;
 /**
  * Factory for producing new {@link Socket}(s).
  */
-@FunctionalInterface
 public interface SocketFactory {
     /**
      * Creates a {@link Socket} bound to the provided host and port.
@@ -17,4 +16,12 @@ public interface SocketFactory {
      * @throws IOException in case of failure to create the {@link Socket}
      */
     Socket create(String host, int port) throws IOException;
+
+    /**
+     * Creates a {@link Socket} unbound to any specific host and port.
+     *
+     * @return the {@link  Socket}
+     * @throws IOException in case of failure to create the {@link Socket}
+     */
+    Socket create() throws IOException;
 }

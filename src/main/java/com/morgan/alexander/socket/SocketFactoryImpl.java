@@ -13,4 +13,9 @@ public class SocketFactoryImpl implements SocketFactory {
                          final int port) throws IOException {
         return new Socket(host, port);
     }
+
+    @Override
+    public Socket create() throws IOException {
+        return new Socket();
+    }
 }
