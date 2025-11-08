@@ -1,6 +1,8 @@
 package com.morgan.alexander.loadbalancer;
 
 import com.morgan.alexander.datatransfer.SocketDataTransferService;
+import com.morgan.alexander.server.model.Server;
+import com.morgan.alexander.server.registry.ServerRegistry;
 import com.morgan.alexander.socket.ServerSocketFactory;
 import com.morgan.alexander.socket.SocketFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,8 @@ class L4LoadBalancerImplTest {
     @Mock
     private ServerSocketFactory serverSocketFactory;
     @Mock
+    private ServerRegistry serverRegistry;
+    @Mock
     private SocketFactory socketFactory;
     @Mock
     private SocketDataTransferService socketDataTransferService;
@@ -32,6 +36,7 @@ class L4LoadBalancerImplTest {
     void setUp() {
         this.testee = new L4LoadBalancerImpl(
                 serverSocketFactory,
+                serverRegistry,
                 socketFactory,
                 socketDataTransferService
         );
@@ -49,8 +54,14 @@ class L4LoadBalancerImplTest {
             when(mockClientServerSocket.accept())
                     .thenReturn(clientSocket);
 
+            final String serverHost = "127.0.0.1";
+            final int serverPort = 5432;
+            final Server server = new Server(serverHost, serverPort);
+            when(serverRegistry.next())
+                    .thenReturn(server);
+
             final Socket loadBalancedServerSocket = mock(Socket.class);
-            when(socketFactory.create("127.0.0.1", 5432))
+            when(socketFactory.create(serverHost, serverPort))
                     .thenReturn(loadBalancedServerSocket);
 
             doNothing()

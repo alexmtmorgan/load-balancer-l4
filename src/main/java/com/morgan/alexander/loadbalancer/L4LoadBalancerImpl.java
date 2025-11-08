@@ -1,6 +1,8 @@
 package com.morgan.alexander.loadbalancer;
 
 import com.morgan.alexander.datatransfer.SocketDataTransferService;
+import com.morgan.alexander.server.model.Server;
+import com.morgan.alexander.server.registry.ServerRegistry;
 import com.morgan.alexander.socket.ServerSocketFactory;
 import com.morgan.alexander.socket.SocketFactory;
 import org.slf4j.Logger;
@@ -16,13 +18,16 @@ public class L4LoadBalancerImpl implements L4LoadBalancer {
     public static final int CLIENT_PORT = 9_876;
 
     private final ServerSocketFactory serverSocketFactory;
+    private final ServerRegistry serverRegistry;
     private final SocketFactory socketFactory;
     private final SocketDataTransferService socketDataTransferService;
 
     public L4LoadBalancerImpl(final ServerSocketFactory serverSocketFactory,
+                              final ServerRegistry serverRegistry,
                               final SocketFactory socketFactory,
                               final SocketDataTransferService socketDataTransferService) {
         this.serverSocketFactory = serverSocketFactory;
+        this.serverRegistry = serverRegistry;
         this.socketFactory = socketFactory;
         this.socketDataTransferService = socketDataTransferService;
     }
@@ -34,8 +39,8 @@ public class L4LoadBalancerImpl implements L4LoadBalancer {
             LOGGER.info("Accepting connections on port: {}", CLIENT_PORT);
             final Socket clientSocket = clientServerSocket.accept();
             LOGGER.debug("Accepted connection from client: {}", clientSocket.getInetAddress());
-            // TODO get the server to connect to
-            try(final Socket serverSocket = socketFactory.create("127.0.0.1", 5432)) {
+            final Server server = serverRegistry.next();
+            try(final Socket serverSocket = socketFactory.create(server.host(), server.port())) {
                 socketDataTransferService.transferData(clientSocket, serverSocket);
                 socketDataTransferService.transferData(serverSocket, clientSocket);
             }
