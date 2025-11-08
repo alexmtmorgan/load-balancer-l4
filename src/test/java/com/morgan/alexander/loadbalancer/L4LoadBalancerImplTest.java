@@ -1,24 +1,21 @@
 package com.morgan.alexander.loadbalancer;
 
+import com.morgan.alexander.datatransfer.SocketDataTransferService;
 import com.morgan.alexander.socket.ServerSocketFactory;
 import com.morgan.alexander.socket.SocketFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class})
 class L4LoadBalancerImplTest {
@@ -26,6 +23,8 @@ class L4LoadBalancerImplTest {
     private ServerSocketFactory serverSocketFactory;
     @Mock
     private SocketFactory socketFactory;
+    @Mock
+    private SocketDataTransferService socketDataTransferService;
 
     private L4LoadBalancer testee;
 
@@ -33,7 +32,8 @@ class L4LoadBalancerImplTest {
     void setUp() {
         this.testee = new L4LoadBalancerImpl(
                 serverSocketFactory,
-                socketFactory
+                socketFactory,
+                socketDataTransferService
         );
     }
 
@@ -53,18 +53,20 @@ class L4LoadBalancerImplTest {
             when(socketFactory.create("127.0.0.1", 5432))
                     .thenReturn(loadBalancedServerSocket);
 
-            byte[] clientBytes = {1, 0, 0, 1};
-            final InputStream clientInputStream = new ByteArrayInputStream(clientBytes);
-            when(clientSocket.getInputStream())
-                    .thenReturn(clientInputStream);
+            doNothing()
+                    .when(socketDataTransferService)
+                    .transferData(clientSocket, loadBalancedServerSocket);
+            doNothing()
+                    .when(socketDataTransferService)
+                    .transferData(loadBalancedServerSocket, clientSocket);
 
-            final ByteArrayOutputStream serverOutputStream = new ByteArrayOutputStream(clientBytes.length);
-            when(loadBalancedServerSocket.getOutputStream())
-                    .thenReturn(serverOutputStream);
+
 
             testee.start();
 
-            assertThat(serverOutputStream.toByteArray()).isEqualTo(clientBytes);
+            final InOrder inOrder = inOrder(socketDataTransferService);
+            inOrder.verify(socketDataTransferService).transferData(clientSocket, loadBalancedServerSocket);
+            inOrder.verify(socketDataTransferService).transferData(loadBalancedServerSocket, clientSocket);
         }
     }
 
